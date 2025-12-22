@@ -25,17 +25,28 @@ jobs:
           pip install pyinstaller dmgbuild
 
       - name: Build with PyInstaller
-        run: pyinstaller SystemCleaner.spec
+        run: pyinstaller SystemCleanerMac.spec
 
       - name: Create DMG
         run: |
           dmgbuild -s dmg_settings.py "System Cleaner" dist/SystemCleaner.dmg
 
-      - name: Upload Artifact
+      - name: Zip .app
+        run: |
+          cd dist
+          zip -r SystemCleaner-macOS-App.zip SystemCleaner.app
+
+      - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: SystemCleaner-DMG
+          name: SystemCleaner-macOS-DMG
           path: dist/SystemCleaner.dmg
+
+      - name: Upload App Zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemCleaner-macOS-App
+          path: dist/SystemCleaner-macOS-App.zip
 
   build-windows:
     runs-on: windows-latest
@@ -53,15 +64,10 @@ jobs:
           pip install pyinstaller
 
       - name: Build with PyInstaller
-        run: pyinstaller SystemCleaner.spec
-
-      - name: Zip Application
-        run: |
-          cd dist
-          Compress-Archive -Path SystemCleaner -DestinationPath SystemCleaner-Windows.zip
+        run: pyinstaller SystemCleanerWin.spec
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemCleaner-Windows
-          path: dist/SystemCleaner-Windows.zip
+          name: SystemCleaner-Windows-Exe
+          path: dist/SystemCleaner.exe
