@@ -282,9 +282,24 @@ saveRuleBtn.addEventListener("click", function () {
 
   window.pywebview.api.save_rules(currentRules).then(() => {
     editRuleModal.classList.add("hidden");
-    loadRules(); // Refresh list
+    loadRules();
   });
 });
+
+// Browse Folder for Rules
+document
+  .getElementById("browse-folder-btn")
+  .addEventListener("click", function () {
+    window.pywebview.api.select_destination_folder().then((result) => {
+      if (result) {
+        if (result.error) {
+          alert(result.error);
+        } else if (result.path) {
+          document.getElementById("rule-folder").value = result.path;
+        }
+      }
+    });
+  });
 
 deleteRuleBtn.addEventListener("click", function () {
   if (editingRuleIndex === -1) return;
@@ -303,6 +318,93 @@ const settingsBtn = document.getElementById("settings-trigger");
 const closeBtn = document.getElementById("close-settings");
 const saveBtn = document.getElementById("save-settings");
 const textarea = document.getElementById("ignore-list-input");
+const excludeBtn = document.getElementById("filter-mode-exclude");
+const includeBtn = document.getElementById("filter-mode-include");
+const filterDesc = document.getElementById("filter-desc");
+
+let currentFilterMode = "exclude"; // exclude | include
+
+function updateFilterUI(mode) {
+  currentFilterMode = mode;
+
+  // Update Buttons
+  if (mode === "exclude") {
+    excludeBtn.classList.add("active");
+    excludeBtn.style.background = "#fff";
+    excludeBtn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+    excludeBtn.style.color = "#000";
+
+    includeBtn.classList.remove("active");
+    includeBtn.style.background = "transparent";
+    includeBtn.style.boxShadow = "none";
+    includeBtn.style.color = "#666";
+
+    filterDesc.innerHTML =
+      "Files matching these patterns will be <strong>IGNORED</strong> (skipped).";
+    textarea.placeholder = "*.tmp\n*.crdownload\n~*\ndesktop.ini";
+
+    // Load Ignore List
+    window.pywebview.api.get_ignore_list().then((list) => {
+      textarea.value = list.join("\n");
+    });
+  } else {
+    includeBtn.classList.add("active");
+    includeBtn.style.background = "#fff";
+    includeBtn.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";
+    includeBtn.style.color = "#000";
+
+    excludeBtn.classList.remove("active");
+    excludeBtn.style.background = "transparent";
+    excludeBtn.style.boxShadow = "none";
+    excludeBtn.style.color = "#666";
+
+    filterDesc.innerHTML =
+      "<strong>ONLY</strong> files matching these patterns will be cleaned. All others are ignored.";
+    textarea.placeholder = "*.pdf\n*.docx\nProject_*\n*.jpg";
+
+    // Load Include List
+    window.pywebview.api.get_include_list().then((list) => {
+      textarea.value = list.join("\n");
+    });
+  }
+}
+
+excludeBtn.addEventListener("click", () => updateFilterUI("exclude"));
+includeBtn.addEventListener("click", () => updateFilterUI("include"));
+
+settingsBtn.addEventListener("click", function () {
+  modal.classList.remove("hidden");
+  // Get current mode from backend
+  window.pywebview.api.get_filter_mode().then((mode) => {
+    updateFilterUI(mode);
+  });
+});
+
+closeBtn.addEventListener("click", function () {
+  modal.classList.add("hidden");
+});
+
+saveBtn.addEventListener("click", function () {
+  const text = textarea.value;
+  const patterns = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line);
+
+  // Save Mode
+  window.pywebview.api.set_filter_mode(currentFilterMode);
+
+  // Save List
+  if (currentFilterMode === "exclude") {
+    window.pywebview.api.save_ignore_list(patterns).then(() => {
+      modal.classList.add("hidden");
+    });
+  } else {
+    window.pywebview.api.save_include_list(patterns).then(() => {
+      modal.classList.add("hidden");
+    });
+  }
+});
 
 // History Modal Logic
 const historyModal = document.getElementById("history-modal");
@@ -357,29 +459,6 @@ window.restoreSession = function (id) {
 
   window.pywebview.api.restore_session(id);
 };
-
-// Use addEventListener instead of onclick to avoid overwrites
-settingsBtn.addEventListener("click", function () {
-  window.pywebview.api.get_ignore_list().then((list) => {
-    textarea.value = list.join("\n");
-    modal.classList.remove("hidden");
-  });
-});
-
-closeBtn.addEventListener("click", function () {
-  modal.classList.add("hidden");
-});
-
-saveBtn.addEventListener("click", function () {
-  const lines = textarea.value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  window.pywebview.api.save_ignore_list(lines).then(() => {
-    modal.classList.add("hidden");
-    alert("Settings saved!");
-  });
-});
 
 window.addEventListener("click", function (event) {
   if (event.target == modal) {

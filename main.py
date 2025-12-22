@@ -47,6 +47,7 @@ def create_app():
         os.makedirs(config_dir)
     history_file = os.path.join(config_dir, "history.json")
     ignore_file = os.path.join(config_dir, "ignore_list.json")
+    include_file = os.path.join(config_dir, "include_list.json")
     settings_file = os.path.join(config_dir, "settings.json")
     rules_file = os.path.join(config_dir, "rules.json")
     ai_config_file = os.path.join(config_dir, "ai_config.json")
@@ -335,7 +336,13 @@ def create_app():
                 folder = item['folder']
                 
                 src = os.path.join(target_path, filename)
-                dst_dir = os.path.join(target_path, folder)
+                
+                # Check if folder is absolute or relative
+                if os.path.isabs(folder):
+                    dst_dir = folder
+                else:
+                    dst_dir = os.path.join(target_path, folder)
+                    
                 dst = os.path.join(dst_dir, filename)
                 
                 if os.path.exists(src):
@@ -438,6 +445,39 @@ def create_app():
                 return folder[0]
             return None
 
+        def _is_system_folder(self, path):
+            path = os.path.abspath(path)
+            # Basic checks
+            if os.name == 'nt': # Windows
+                sys_dirs = [
+                    os.environ.get('SystemRoot', 'C:\\Windows'),
+                    os.environ.get('ProgramFiles', 'C:\\Program Files'),
+                    os.environ.get('ProgramFiles(x86)', 'C:\\Program Files (x86)'),
+                ]
+                # Also prevent root of C drive
+                if path.lower().rstrip('\\') == 'c:': return True
+            else: # Mac/Linux
+                sys_dirs = ['/System', '/bin', '/sbin', '/usr', '/var', '/etc']
+                if path == '/': return True
+
+            for sys_dir in sys_dirs:
+                if sys_dir and path.lower().startswith(sys_dir.lower()):
+                    return True
+            return False
+
+        def select_destination_folder(self):
+            """
+            Select a destination folder for rules.
+            """
+            folder = webview.windows[0].create_file_dialog(webview.FOLDER_DIALOG)
+            if folder and len(folder) > 0:
+                path = folder[0]
+                # Validate path (prevent system folders)
+                if self._is_system_folder(path):
+                    return {"error": "System folders are protected. Please choose a user folder."}
+                return {"path": path}
+            return None
+
         def get_ignore_list(self):
             if os.path.exists(ignore_file):
                 try:
@@ -450,6 +490,44 @@ def create_app():
         def save_ignore_list(self, patterns):
             with open(ignore_file, 'w') as f:
                 json.dump(patterns, f)
+            return True
+
+        def get_include_list(self):
+            if os.path.exists(include_file):
+                try:
+                    with open(include_file, 'r') as f:
+                        return json.load(f)
+                except:
+                    return []
+            return []
+
+        def save_include_list(self, patterns):
+            with open(include_file, 'w') as f:
+                json.dump(patterns, f)
+            return True
+        
+        def get_filter_mode(self):
+            if os.path.exists(settings_file):
+                try:
+                    with open(settings_file, 'r') as f:
+                        settings = json.load(f)
+                        return settings.get("filter_mode", "exclude")
+                except:
+                    pass
+            return "exclude"
+
+        def set_filter_mode(self, mode):
+            settings = {}
+            if os.path.exists(settings_file):
+                try:
+                    with open(settings_file, 'r') as f:
+                        settings = json.load(f)
+                except:
+                    pass
+            
+            settings["filter_mode"] = mode
+            with open(settings_file, 'w') as f:
+                json.dump(settings, f)
             return True
 
         def get_history(self):
@@ -582,8 +660,10 @@ def create_app():
                 errors = 0
                 undo_log = []
                 
-                # Load ignore patterns
+                # Load filter mode and patterns
+                filter_mode = self.get_filter_mode()
                 ignore_patterns = self.get_ignore_list()
+                include_patterns = self.get_include_list()
                 
                 try:
                     files = [f for f in os.listdir(downloads_path) 
@@ -597,14 +677,26 @@ def create_app():
                             webview.windows[0].evaluate_js('window.cleaningStopped()')
                             return
 
-                        # Check if file matches any ignore pattern
-                        should_ignore = False
-                        for pattern in ignore_patterns:
-                            if fnmatch.fnmatch(filename, pattern):
-                                should_ignore = True
-                                break
+                        # Check filter logic
+                        should_skip = False
                         
-                        if should_ignore:
+                        if filter_mode == "exclude":
+                            # Exclude if matches ignore pattern
+                            for pattern in ignore_patterns:
+                                if fnmatch.fnmatch(filename, pattern):
+                                    should_skip = True
+                                    break
+                        else: # include mode
+                            # Skip UNLESS it matches include pattern
+                            matches_include = False
+                            for pattern in include_patterns:
+                                if fnmatch.fnmatch(filename, pattern):
+                                    matches_include = True
+                                    break
+                            if not matches_include:
+                                should_skip = True
+                        
+                        if should_skip:
                             progress = ((i + 1) / total) * 100
                             webview.windows[0].evaluate_js(f'window.updateProgress({progress})')
                             continue
@@ -663,7 +755,12 @@ def create_app():
                              webview.windows[0].evaluate_js(f'window.updateProgress({progress})')
                              continue
 
-                        target_dir = os.path.join(downloads_path, target_folder)
+                        # Determine target directory (Absolute or Relative)
+                        if os.path.isabs(target_folder):
+                            target_dir = target_folder
+                        else:
+                            target_dir = os.path.join(downloads_path, target_folder)
+                            
                         if not os.path.exists(target_dir):
                             os.makedirs(target_dir)
                             
