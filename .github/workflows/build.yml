@@ -24,7 +24,10 @@ jobs:
       - name: Install Python Dependencies
         run: |
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller dmgbuild
+
+      - name: Generate Icons
+        run: python3 generate_icons.py
 
       - name: Build with PyInstaller
         run: pyinstaller SystemCleanerMac.spec
@@ -81,6 +84,9 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install pyinstaller
+
+      - name: Generate Icons
+        run: python generate_icons.py
 
       - name: Build with PyInstaller
         run: pyinstaller SystemCleanerWin.spec

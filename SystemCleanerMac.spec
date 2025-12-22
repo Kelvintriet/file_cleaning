@@ -45,6 +45,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='SystemCleaner.app',
-    icon=None,
+    icon='icon.icns',
     bundle_identifier='com.kelvin.systemcleaner',
 )
