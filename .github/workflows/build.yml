@@ -17,19 +17,38 @@ jobs:
           python-version: "3.11"
 
       - name: Install System Dependencies
-        run: brew install tesseract
+        run: |
+          brew install tesseract
+          brew install create-dmg
 
       - name: Install Python Dependencies
         run: |
           pip install -r requirements.txt
-          pip install pyinstaller dmgbuild
+          pip install pyinstaller
 
       - name: Build with PyInstaller
         run: pyinstaller SystemCleanerMac.spec
 
+      - name: Generate DMG Background
+        run: python3 generate_dmg_bg.py
+
       - name: Create DMG
         run: |
-          dmgbuild -s dmg_settings.py "System Cleaner" dist/SystemCleaner.dmg
+          # Ensure dist folder exists
+          mkdir -p dist
+
+          # Create DMG using create-dmg with background
+          create-dmg \
+            --volname "SystemCleaner" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --background "web/dmg_background.png" \
+            --icon "SystemCleaner.app" 200 190 \
+            --hide-extension "SystemCleaner.app" \
+            --app-drop-link 600 190 \
+            "dist/SystemCleaner.dmg" \
+            "dist/SystemCleaner.app"
 
       - name: Zip .app
         run: |
