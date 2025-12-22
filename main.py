@@ -742,7 +742,7 @@ def create_app():
 
     api = Api()
     webview.create_window('System Cleaner', url=index_path, js_api=api, width=800, height=600)
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 if __name__ == '__main__':
     create_app()
