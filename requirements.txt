@@ -1,0 +1,9 @@
+pywebview
+sumy
+nltk
+requests
+pytesseract
+Pillow
+python-docx
+PyPDF2
+lxml

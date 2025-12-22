@@ -1,0 +1,63 @@
+name: Build System Cleaner
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install System Dependencies
+        run: brew install tesseract
+        
+      - name: Install Python Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+          
+      - name: Build with PyInstaller
+        run: pyinstaller SystemCleaner.spec
+        
+      - name: Zip Application
+        run: |
+          cd dist
+          zip -r SystemCleaner-macOS.zip SystemCleaner.app
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemCleaner-macOS
+          path: dist/SystemCleaner-macOS.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install Python Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+          
+      - name: Build with PyInstaller
+        run: pyinstaller SystemCleaner.spec
+        
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SystemCleaner-Windows
+          path: dist/SystemCleaner.exe
