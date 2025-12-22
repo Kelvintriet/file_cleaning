@@ -22,21 +22,20 @@ jobs:
       - name: Install Python Dependencies
         run: |
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller dmgbuild
 
       - name: Build with PyInstaller
         run: pyinstaller SystemCleaner.spec
 
-      - name: Zip Application
+      - name: Create DMG
         run: |
-          cd dist
-          zip -r SystemCleaner-macOS.zip SystemCleaner.app
+          dmgbuild -s dmg_settings.py "System Cleaner" dist/SystemCleaner.dmg
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SystemCleaner-macOS
-          path: dist/SystemCleaner-macOS.zip
+          name: SystemCleaner-DMG
+          path: dist/SystemCleaner.dmg
 
   build-windows:
     runs-on: windows-latest
