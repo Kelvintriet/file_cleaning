@@ -53,6 +53,7 @@ const aiRiskAck = document.getElementById("ai-risk-ack");
 const aiSelectAll = document.getElementById("ai-select-all");
 
 let currentAiResults = [];
+let isAiScanning = false;
 
 aiBtn.addEventListener("click", function () {
   // Load config
@@ -66,6 +67,10 @@ aiBtn.addEventListener("click", function () {
       aiPrioritizeRules.checked = config.prioritize_rules;
     if (config.respect_ignore !== undefined)
       aiRespectIgnore.checked = config.respect_ignore;
+    if (config.batch_size)
+      document.getElementById("ai-batch-size").value = config.batch_size;
+    if (config.max_files !== undefined)
+      document.getElementById("ai-max-files").value = config.max_files;
   });
 
   // Reset state
@@ -76,15 +81,20 @@ aiBtn.addEventListener("click", function () {
 });
 
 closeAiBtn.addEventListener("click", function () {
+  isAiScanning = false;
   aiModal.classList.add("hidden");
 });
 
-startAiScanBtn.addEventListener("click", function () {
+startAiScanBtn.addEventListener("click", async function () {
   const apiKey = aiApiKeyInput.value.trim();
   if (!apiKey) {
     alert("API Key is required!");
     return;
   }
+
+  const batchSize =
+    parseInt(document.getElementById("ai-batch-size").value) || 15;
+  const maxFiles = parseInt(document.getElementById("ai-max-files").value) || 0;
 
   // Save config
   const config = {
@@ -95,6 +105,8 @@ startAiScanBtn.addEventListener("click", function () {
     instructions: aiInstructionsInput.value,
     prioritize_rules: aiPrioritizeRules.checked,
     respect_ignore: aiRespectIgnore.checked,
+    batch_size: batchSize,
+    max_files: maxFiles,
   };
   window.pywebview.api.save_ai_config(config);
 
@@ -102,27 +114,85 @@ startAiScanBtn.addEventListener("click", function () {
   document.getElementById("ai-step-config").classList.add("hidden");
   document.getElementById("ai-step-scanning").classList.remove("hidden");
 
-  // Run scan
-  window.pywebview.api.run_ai_scan(config).then((response) => {
+  isAiScanning = true;
+  currentAiResults = []; // Clear previous results
+  let offset = 0;
+  let totalProcessed = 0;
+
+  // UI Elements
+  const statusMsg = document
+    .getElementById("ai-step-scanning")
+    .querySelector("h3");
+  const subMsg = document.getElementById("ai-step-scanning").querySelector("p");
+
+  try {
+    while (isAiScanning) {
+      // Calculate effective batch size if maxFiles is set
+      let currentBatchSize = batchSize;
+      if (maxFiles > 0) {
+        const remaining = maxFiles - totalProcessed;
+        if (remaining <= 0) break;
+        if (remaining < batchSize) currentBatchSize = remaining;
+      }
+
+      statusMsg.innerText = `Analyzing batch...`;
+      subMsg.innerText = `Processed: ${totalProcessed} files. Fetching next ${currentBatchSize}...`;
+
+      const batchConfig = {
+        ...config,
+        offset: offset,
+        batch_size: currentBatchSize,
+      };
+      const response = await window.pywebview.api.run_ai_scan(batchConfig);
+
+      if (response.error) {
+        if (offset === 0) {
+          alert("Error: " + response.error);
+          document.getElementById("ai-step-config").classList.remove("hidden");
+          document.getElementById("ai-step-scanning").classList.add("hidden");
+          return;
+        } else {
+          alert(
+            "Error in batch: " +
+              response.error +
+              "\nStopping and showing partial results."
+          );
+          break;
+        }
+      }
+
+      if (response.results && response.results.length > 0) {
+        currentAiResults = currentAiResults.concat(response.results);
+      }
+
+      const processedInBatch = response.processed || 0;
+      totalProcessed += processedInBatch;
+      offset += processedInBatch; // Increment offset by actual processed count
+
+      if (response.is_complete || processedInBatch === 0) {
+        break;
+      }
+
+      // Small delay to allow UI updates
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    // Loop finished
     document.getElementById("ai-step-scanning").classList.add("hidden");
 
-    if (response.error) {
-      alert("Error: " + response.error);
+    if (currentAiResults.length === 0) {
+      alert("No suggestions returned.");
       document.getElementById("ai-step-config").classList.remove("hidden");
       return;
     }
 
-    if (!response.results || response.results.length === 0) {
-      alert("No suggestions returned from AI.");
-      document.getElementById("ai-step-config").classList.remove("hidden");
-      return;
-    }
-
-    // Show results
-    currentAiResults = response.results;
     renderAiResults(currentAiResults);
     document.getElementById("ai-step-review").classList.remove("hidden");
-  });
+  } catch (e) {
+    alert("Unexpected error: " + e);
+    document.getElementById("ai-step-scanning").classList.add("hidden");
+    document.getElementById("ai-step-config").classList.remove("hidden");
+  }
 });
 
 function renderAiResults(results) {

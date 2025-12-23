@@ -323,12 +323,20 @@ def create_app():
             prioritize_rules = config.get("prioritize_rules", True)
             respect_ignore = config.get("respect_ignore", True)
             
+            # Pagination / Limits
+            limit = int(config.get("batch_size", 15))
+            offset = int(config.get("offset", 0))
+            
             # OpenAI Config
             base_url = config.get("base_url", "https://api.sambanova.ai/v1")
             model_name = config.get("model_name", "Meta-Llama-3.1-8B-Instruct")
             
+            # Allow empty key for local/custom endpoints (use dummy)
             if not api_key:
-                return {"error": "API Key is required"}
+                if any(x in base_url for x in ["localhost", "127.0.0.1", "0.0.0.0", "lmstudio", "ollama"]):
+                    api_key = "dummy-key"
+                else:
+                    return {"error": "API Key is required"}
             
             target_path = self.get_target_path()
             files_to_analyze = []
@@ -338,6 +346,7 @@ def create_app():
                 all_files = [f for f in os.listdir(target_path) 
                              if os.path.isfile(os.path.join(target_path, f)) 
                              and not f.startswith('.')]
+                all_files.sort() # Ensure deterministic order for pagination
                 
                 # Check ignore/include lists
                 ignore_patterns = self.get_ignore_list()
@@ -366,14 +375,24 @@ def create_app():
                     if not should_skip:
                         valid_files.append(f)
                 
+                total_valid = len(valid_files)
+
                 if not valid_files:
                      if not all_files:
                         return {"error": "Target folder is empty."}
                      else:
                         return {"error": "All files filtered out by Ignore/Include list."}
 
-                # Limit to 15 files
-                files_to_scan = valid_files[:15] 
+                # Apply Pagination
+                files_to_scan = valid_files[offset : offset + limit]
+                
+                if not files_to_scan:
+                    return {
+                        "success": True, 
+                        "results": [],
+                        "total_valid": total_valid,
+                        "is_complete": True
+                    }
                 
                 for f in files_to_scan:
                     file_info = {"name": f}
@@ -507,7 +526,13 @@ def create_app():
                 if not self.ai_results:
                         return {"error": "AI analyzed the files but returned no suggestions. Try changing your instructions."}
                         
-                return {"success": True, "results": self.ai_results}
+                return {
+                    "success": True, 
+                    "results": self.ai_results,
+                    "processed": len(files_to_scan),
+                    "total_valid": total_valid,
+                    "is_complete": (offset + len(files_to_scan)) >= total_valid
+                }
 
             except Exception as e:
                 return {"error": f"API Error: {str(e)}"}
@@ -1040,7 +1065,7 @@ def create_app():
 
     api = Api()
     webview.create_window('System Cleaner', url=index_path, js_api=api, width=800, height=600)
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 if __name__ == '__main__':
     create_app()
