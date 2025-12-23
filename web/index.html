@@ -12,9 +12,6 @@
     <div class="container">
       <div class="header">
         <h1><i class="fas fa-broom"></i> System Cleaner</h1>
-        <p>Organize your Downloads folder instantly.</p>
-
-        <!-- Profile Selector -->
         <div
           style="
             margin-top: 15px;
@@ -91,7 +88,15 @@
 
       <!-- AI Modal -->
       <div id="ai-modal" class="modal hidden">
-        <div class="modal-content modal-content-large">
+        <div
+          class="modal-content"
+          style="
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+          "
+        >
           <div class="modal-header">
             <h2><i class="fas fa-magic"></i> AI Smart Sort</h2>
             <button id="close-ai" class="close-btn">&times;</button>
@@ -99,8 +104,6 @@
           <div class="modal-body">
             <!-- Step 1: Config -->
             <div id="ai-step-config">
-              <p>Use AI to analyze and sort your files intelligently.</p>
-
               <div class="form-group">
                 <label>API Configuration</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px">
@@ -214,11 +217,6 @@
 
             <!-- Step 3: Review -->
             <div id="ai-step-review" class="hidden">
-              <h3>Review Suggestions</h3>
-              <p>
-                Please review the AI's suggestions carefully before applying.
-              </p>
-
               <div
                 class="table-container"
                 style="
@@ -358,40 +356,34 @@
                 placeholder="e.g. project-($)"
               />
 
-              <div
-                class="help-box"
-                style="
-                  background: #f0f7ff;
-                  padding: 12px;
-                  border-radius: 8px;
-                  font-size: 12px;
-                  margin-top: 10px;
-                  color: #444;
-                  border: 1px solid #cce5ff;
-                "
-              >
-                <div
-                  style="font-weight: 600; margin-bottom: 5px; color: #0071e3"
-                >
-                  <i class="fas fa-info-circle"></i> How to use Smart Sorting
+              <div class="help-box">
+                <div class="help-header" id="pattern-help-toggle">
+                  <div style="font-weight: 600; color: #0071e3">
+                    <i class="fas fa-info-circle"></i> Smart Sorting Guide
+                  </div>
+                  <i
+                    class="fas fa-chevron-down collapse-icon rotated"
+                    id="pattern-help-icon"
+                  ></i>
                 </div>
-                Use <code>($)</code> in the pattern to capture text from the
-                filename. This captured text will become a
-                <strong>subfolder</strong> inside your target folder.
-                <br /><br />
-                <strong>Examples:</strong>
-                <ul style="padding-left: 15px; margin: 5px 0 0 0">
-                  <li>
-                    <code>project-($)</code> matches
-                    <code>project-<strong>alpha</strong>.pdf</code> <br />&rarr;
-                    Moves to: <code>Target/alpha/</code>
-                  </li>
-                  <li style="margin-top: 4px">
-                    <code>($)-invoice</code> matches
-                    <code><strong>2024</strong>-invoice.png</code> <br />&rarr;
-                    Moves to: <code>Target/2024/</code>
-                  </li>
-                </ul>
+
+                <div class="help-content collapsed" id="pattern-help-content">
+                  Use <code>($)</code> to capture text from the filename. This
+                  becomes a <strong>subfolder</strong>. <br /><br />
+                  <strong>Examples:</strong>
+                  <ul style="padding-left: 15px; margin: 5px 0 0 0">
+                    <li>
+                      <code>project-($)</code> &rarr;
+                      <code>project-alpha.pdf</code> &rarr;
+                      <code>Target/alpha/</code>
+                    </li>
+                    <li style="margin-top: 4px">
+                      <code>($)-invoice</code> &rarr;
+                      <code>2024-invoice.png</code> &rarr;
+                      <code>Target/2024/</code>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -428,7 +420,7 @@
               </button>
             </div>
 
-            <div id="profiles-list">
+            <div id="profiles-list" style="max-height: 300px; overflow-y: auto">
               <!-- List populated by JS -->
             </div>
           </div>
@@ -437,7 +429,7 @@
 
       <!-- Community Modal -->
       <div id="community-modal" class="modal hidden">
-        <div class="modal-content modal-content-large">
+        <div class="modal-content" style="max-width: 900px">
           <div class="modal-header">
             <h2><i class="fas fa-users"></i> Community Rules</h2>
             <button id="close-community" class="close-btn">&times;</button>
@@ -456,11 +448,16 @@
               </button>
             </div>
 
-            <div class="community-grid">
+            <div
+              style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px"
+            >
               <!-- List -->
               <div>
                 <h3>Available Rules</h3>
-                <div id="community-list" style="margin-top: 10px">
+                <div
+                  id="community-list"
+                  style="margin-top: 10px; max-height: 400px; overflow-y: auto"
+                >
                   <div style="text-align: center; color: #888; padding: 20px">
                     Enter a URL and click Refresh to load rules.
                   </div>
@@ -470,17 +467,14 @@
               <!-- Actions -->
               <div
                 style="
-                  background: #fff;
+                  background: #f8f8f8;
                   border: 1px solid #eee;
-                  padding: 15px;
-                  border-radius: 8px;
+                  padding: 20px;
+                  border-radius: 12px;
                   height: fit-content;
                 "
               >
-                <h3>Share Your Rules</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px">
-                  Upload your current active profile to the community.
-                </p>
+                <h3 style="margin-bottom: 15px">Share Profile</h3>
                 <div class="form-group">
                   <label>Name</label>
                   <input

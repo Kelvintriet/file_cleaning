@@ -7,3 +7,5 @@ Pillow
 python-docx
 PyPDF2
 lxml
+dmgbuild
+openai

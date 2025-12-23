@@ -7,7 +7,32 @@ window.addEventListener("pywebviewready", function () {
   document.getElementById("rules-modal").classList.add("hidden");
   document.getElementById("edit-rule-modal").classList.add("hidden");
   document.getElementById("ai-modal").classList.add("hidden");
+  document.getElementById("profiles-modal").classList.add("hidden");
+  document.getElementById("community-modal").classList.add("hidden");
+
+  loadProfiles();
+  setupPatternHelp();
 });
+
+function setupPatternHelp() {
+  const toggle = document.getElementById("pattern-help-toggle");
+  const content = document.getElementById("pattern-help-content");
+  const icon = document.getElementById("pattern-help-icon");
+
+  if (toggle && content && icon) {
+    toggle.addEventListener("click", () => {
+      const isCollapsed = content.classList.toggle("collapsed");
+      icon.classList.toggle("rotated", isCollapsed);
+
+      // If expanding, set max-height to a reasonable value or scrollHeight
+      if (!isCollapsed) {
+        content.style.maxHeight = content.scrollHeight + "px";
+      } else {
+        content.style.maxHeight = "0";
+      }
+    });
+  }
+}
 
 // AI Logic
 const aiModal = document.getElementById("ai-modal");
@@ -17,6 +42,8 @@ const startAiScanBtn = document.getElementById("start-ai-scan-btn");
 const aiBackBtn = document.getElementById("ai-back-btn");
 const applyAiBtn = document.getElementById("apply-ai-btn");
 const aiApiKeyInput = document.getElementById("ai-api-key");
+const aiBaseUrlInput = document.getElementById("ai-base-url");
+const aiModelNameInput = document.getElementById("ai-model-name");
 const aiModeSelect = document.getElementById("ai-mode");
 const aiInstructionsInput = document.getElementById("ai-instructions");
 const aiPrioritizeRules = document.getElementById("ai-prioritize-rules");
@@ -31,6 +58,8 @@ aiBtn.addEventListener("click", function () {
   // Load config
   window.pywebview.api.get_ai_config().then((config) => {
     if (config.api_key) aiApiKeyInput.value = config.api_key;
+    if (config.base_url) aiBaseUrlInput.value = config.base_url;
+    if (config.model_name) aiModelNameInput.value = config.model_name;
     if (config.mode) aiModeSelect.value = config.mode;
     if (config.instructions) aiInstructionsInput.value = config.instructions;
     if (config.prioritize_rules !== undefined)
@@ -60,6 +89,8 @@ startAiScanBtn.addEventListener("click", function () {
   // Save config
   const config = {
     api_key: apiKey,
+    base_url: aiBaseUrlInput.value.trim(),
+    model_name: aiModelNameInput.value.trim(),
     mode: aiModeSelect.value,
     instructions: aiInstructionsInput.value,
     prioritize_rules: aiPrioritizeRules.checked,
@@ -404,6 +435,222 @@ saveBtn.addEventListener("click", function () {
       modal.classList.add("hidden");
     });
   }
+});
+
+// --- Profiles Logic ---
+const profilesModal = document.getElementById("profiles-modal");
+const manageProfilesBtn = document.getElementById("manage-profiles-btn");
+const profileSelect = document.getElementById("profile-select");
+const createProfileBtn = document.getElementById("create-profile-btn");
+const closeProfilesBtn = document.getElementById("close-profiles");
+const profilesList = document.getElementById("profiles-list");
+
+function loadProfiles() {
+  window.pywebview.api.get_profiles().then((profiles) => {
+    // Populate Select
+    profileSelect.innerHTML = "";
+    profiles.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.innerText = p;
+      profileSelect.appendChild(opt);
+    });
+
+    // Set Active
+    window.pywebview.api.get_active_profile().then((active) => {
+      profileSelect.value = active;
+    });
+
+    // Populate Manage List
+    profilesList.innerHTML = "";
+    profiles.forEach((p) => {
+      const div = document.createElement("div");
+      div.className = "profile-manage-item";
+
+      div.innerHTML = `<span style="font-weight: 500;">${p}</span>`;
+
+      const actions = document.createElement("div");
+      actions.className = "profile-manage-actions";
+
+      if (p !== "Default") {
+        // Rename Button
+        const renBtn = document.createElement("button");
+        renBtn.className = "btn-text";
+        renBtn.style.fontSize = "13px";
+        renBtn.innerHTML = '<i class="fas fa-edit"></i> Rename';
+        renBtn.onclick = () => renameProfile(p);
+        actions.appendChild(renBtn);
+
+        // Delete Button
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-text";
+        delBtn.style.color = "#ff3b30";
+        delBtn.style.fontSize = "13px";
+        delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        delBtn.onclick = () => deleteProfile(p);
+        actions.appendChild(delBtn);
+      } else {
+        const tag = document.createElement("span");
+        tag.style.fontSize = "12px";
+        tag.style.color = "#888";
+        tag.style.fontWeight = "500";
+        tag.innerText = "System Default";
+        actions.appendChild(tag);
+      }
+      div.appendChild(actions);
+      profilesList.appendChild(div);
+    });
+  });
+}
+
+profileSelect.addEventListener("change", function () {
+  window.pywebview.api.set_active_profile(this.value).then(() => {
+    loadRules(); // Refresh rules for new profile
+  });
+});
+
+manageProfilesBtn.addEventListener("click", () => {
+  loadProfiles();
+  profilesModal.classList.remove("hidden");
+});
+
+closeProfilesBtn.addEventListener("click", () =>
+  profilesModal.classList.add("hidden")
+);
+
+createProfileBtn.addEventListener("click", () => {
+  const name = document.getElementById("new-profile-name").value.trim();
+  if (!name) return;
+
+  window.pywebview.api.create_profile(name).then((res) => {
+    if (res.error) alert(res.error);
+    else {
+      document.getElementById("new-profile-name").value = "";
+      loadProfiles();
+    }
+  });
+});
+
+function renameProfile(name) {
+  const newName = prompt("Enter new profile name:", name);
+  if (!newName || newName === name) return;
+
+  window.pywebview.api.rename_profile(name, newName).then((res) => {
+    if (res.error) alert(res.error);
+    else loadProfiles();
+  });
+}
+
+function deleteProfile(name) {
+  if (!confirm(`Delete profile "${name}"?`)) return;
+  window.pywebview.api.delete_profile(name).then((res) => {
+    if (res.error) alert(res.error);
+    else loadProfiles();
+  });
+}
+
+// --- Community Logic ---
+const communityModal = document.getElementById("community-modal");
+const communityBtn = document.getElementById("community-btn");
+const closeCommunityBtn = document.getElementById("close-community");
+const refreshCommunityBtn = document.getElementById("refresh-community-btn");
+const communityList = document.getElementById("community-list");
+const publishBtn = document.getElementById("publish-btn");
+
+communityBtn.addEventListener("click", () => {
+  // Load saved url? Maybe save it in settings later. For now just open.
+  communityModal.classList.remove("hidden");
+});
+
+closeCommunityBtn.addEventListener("click", () =>
+  communityModal.classList.add("hidden")
+);
+
+refreshCommunityBtn.addEventListener("click", () => {
+  // URL handled by backend default
+  communityList.innerHTML =
+    '<div style="text-align: center; padding: 20px;">Loading...</div>';
+
+  window.pywebview.api.fetch_community_rules(null).then((res) => {
+    communityList.innerHTML = "";
+    if (res.error) {
+      communityList.innerHTML = `<div style="color: red; text-align: center;">${res.error}</div>`;
+      return;
+    }
+
+    if (!res.rules || res.rules.length === 0) {
+      communityList.innerHTML = `<div style="text-align: center; color: #888;">No rules found. Be the first to publish!</div>`;
+      return;
+    }
+
+    res.rules.forEach((rule) => {
+      const div = document.createElement("div");
+      div.style.padding = "15px";
+      div.style.background = "#fff";
+      div.style.border = "1px solid #eee";
+      div.style.borderRadius = "8px";
+      div.style.marginBottom = "10px";
+
+      div.innerHTML = `
+                <div style="font-weight: 600; font-size: 16px;">${
+                  rule.name || "Unknown"
+                }</div>
+                <div style="font-size: 13px; color: #666; margin: 5px 0;">${
+                  rule.description || "No description"
+                }</div>
+                <div style="font-size: 12px; color: #999; display: flex; justify-content: space-between; align-items: center;">
+                    <span>By: ${rule.author || "Anonymous"}</span>
+                    <button class="btn-primary" style="padding: 4px 12px; font-size: 12px;">Install</button>
+                </div>
+            `;
+
+      div.querySelector("button").onclick = () => installRule(rule);
+      communityList.appendChild(div);
+    });
+  });
+});
+
+function installRule(rule) {
+  window.pywebview.api.install_community_rule(rule).then((res) => {
+    if (res.success) {
+      alert(`Installed profile: ${res.profile}`);
+      loadProfiles();
+      communityModal.classList.add("hidden");
+    }
+  });
+}
+
+publishBtn.addEventListener("click", () => {
+  // URL handled by backend
+
+  const name = document.getElementById("publish-name").value.trim();
+  const desc = document.getElementById("publish-desc").value.trim();
+  const author = document.getElementById("publish-author").value.trim();
+
+  if (!name) {
+    alert("Name is required");
+    return;
+  }
+
+  // Get current rules
+  window.pywebview.api.get_rules().then((rules) => {
+    const payload = {
+      name: name,
+      description: desc,
+      author: author,
+      rules: rules,
+      date: new Date().toISOString(),
+    };
+
+    window.pywebview.api.publish_community_rule(null, payload).then((res) => {
+      if (res.success) {
+        alert("Published successfully!");
+        refreshCommunityBtn.click(); // Reload list
+      } else {
+        alert("Error: " + res.error);
+      }
+    });
+  });
 });
 
 // History Modal Logic
