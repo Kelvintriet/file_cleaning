@@ -13,6 +13,46 @@
       <div class="header">
         <h1><i class="fas fa-broom"></i> System Cleaner</h1>
         <p>Organize your Downloads folder instantly.</p>
+
+        <!-- Profile Selector -->
+        <div
+          style="
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+          "
+        >
+          <div style="position: relative; display: inline-block">
+            <select
+              id="profile-select"
+              style="
+                padding: 6px 12px;
+                border-radius: 6px;
+                border: 1px solid #d2d2d7;
+                font-size: 14px;
+                min-width: 150px;
+              "
+            >
+              <!-- Profiles populated by JS -->
+            </select>
+          </div>
+          <button
+            id="manage-profiles-btn"
+            class="btn-text"
+            style="font-size: 14px"
+          >
+            <i class="fas fa-edit"></i>
+          </button>
+          <button
+            id="community-btn"
+            class="btn-text"
+            style="font-size: 14px; color: #007aff"
+          >
+            <i class="fas fa-globe"></i> Community
+          </button>
+        </div>
       </div>
 
       <div class="stats-card">
@@ -51,31 +91,43 @@
 
       <!-- AI Modal -->
       <div id="ai-modal" class="modal hidden">
-        <div
-          class="modal-content"
-          style="
-            max-width: 800px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-          "
-        >
+        <div class="modal-content modal-content-large">
           <div class="modal-header">
             <h2><i class="fas fa-magic"></i> AI Smart Sort</h2>
             <button id="close-ai" class="close-btn">&times;</button>
           </div>
-          <div class="modal-body" style="flex: 1; overflow-y: auto">
+          <div class="modal-body">
             <!-- Step 1: Config -->
             <div id="ai-step-config">
               <p>Use AI to analyze and sort your files intelligently.</p>
 
               <div class="form-group">
-                <label>SambaNova API Key</label>
+                <label>API Configuration</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px">
+                  <input
+                    type="text"
+                    id="ai-base-url"
+                    placeholder="Base URL (e.g. https://api.sambanova.ai/v1)"
+                    value="https://api.sambanova.ai/v1"
+                    style="flex: 2"
+                  />
+                  <input
+                    type="text"
+                    id="ai-model-name"
+                    placeholder="Model Name"
+                    value="Meta-Llama-3.1-8B-Instruct"
+                    style="flex: 1"
+                  />
+                </div>
                 <input
                   type="password"
                   id="ai-api-key"
                   placeholder="Enter your API Key"
                 />
+                <small
+                  >Compatible with any OpenAI-like API (SambaNova, OpenAI, Groq,
+                  LocalAI).</small
+                >
               </div>
 
               <div class="form-group">
@@ -247,7 +299,7 @@
             <h2>Organization Rules</h2>
             <button id="close-rules" class="close-btn">&times;</button>
           </div>
-          <div class="modal-body" style="max-height: 400px; overflow-y: auto">
+          <div class="modal-body">
             <div id="rules-list"></div>
             <button
               id="add-rule-btn"
@@ -352,6 +404,116 @@
             >
               Delete
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profiles Management Modal -->
+      <div id="profiles-modal" class="modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Manage Profiles</h2>
+            <button id="close-profiles" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px">
+              <input
+                type="text"
+                id="new-profile-name"
+                placeholder="New Profile Name"
+                style="flex: 1"
+              />
+              <button id="create-profile-btn" class="btn-primary">
+                Create
+              </button>
+            </div>
+
+            <div id="profiles-list">
+              <!-- List populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Community Modal -->
+      <div id="community-modal" class="modal hidden">
+        <div class="modal-content modal-content-large">
+          <div class="modal-header">
+            <h2><i class="fas fa-users"></i> Community Rules</h2>
+            <button id="close-community" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <!-- URL input hidden for user, handled in backend -->
+            <div
+              style="
+                margin-bottom: 20px;
+                display: flex;
+                justify-content: flex-end;
+              "
+            >
+              <button id="refresh-community-btn" class="btn-primary">
+                <i class="fas fa-sync"></i> Refresh List
+              </button>
+            </div>
+
+            <div class="community-grid">
+              <!-- List -->
+              <div>
+                <h3>Available Rules</h3>
+                <div id="community-list" style="margin-top: 10px">
+                  <div style="text-align: center; color: #888; padding: 20px">
+                    Enter a URL and click Refresh to load rules.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div
+                style="
+                  background: #fff;
+                  border: 1px solid #eee;
+                  padding: 15px;
+                  border-radius: 8px;
+                  height: fit-content;
+                "
+              >
+                <h3>Share Your Rules</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px">
+                  Upload your current active profile to the community.
+                </p>
+                <div class="form-group">
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    id="publish-name"
+                    placeholder="e.g. Developer Setup"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea
+                    id="publish-desc"
+                    rows="3"
+                    placeholder="What does this rule set do?"
+                  ></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Author</label>
+                  <input
+                    type="text"
+                    id="publish-author"
+                    placeholder="Your Name"
+                  />
+                </div>
+                <button
+                  id="publish-btn"
+                  class="btn-secondary"
+                  style="width: 100%"
+                >
+                  <i class="fas fa-cloud-upload-alt"></i> Publish Profile
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
