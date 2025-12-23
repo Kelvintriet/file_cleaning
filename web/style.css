@@ -285,19 +285,11 @@ h1 {
 
 .modal-content {
   background: white;
-  width: 90%;
-  max-width: 450px;
+  width: 80%;
+  max-width: 400px;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh; /* Prevent vertical overflow */
-}
-
-/* Large Modal Variant */
-.modal-content-large {
-  max-width: 900px;
 }
 
 .modal-header {
@@ -305,18 +297,12 @@ h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-  flex-shrink: 0;
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 18px;
   color: #333;
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
 }
 
 .close-btn {
@@ -348,20 +334,18 @@ textarea:focus {
   border-color: #0071e3;
 }
 
+.modal-body {
+  padding: 10px 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
 .modal-footer {
   margin-top: 15px;
   text-align: right;
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-/* Community Grid */
-.community-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
 }
 
 /* History List */
@@ -419,48 +403,168 @@ textarea:focus {
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border: 1px solid transparent;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+.rule-item:hover {
+  border-color: #0071e3;
+  background: #f0f7ff;
+}
+
+.rule-info {
+  flex: 1;
+}
+
+.rule-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+}
+
+.rule-detail {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #0071e3;
+}
+
+.form-group small {
+  font-size: 11px;
+  color: #86868b;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Help Box and Collapse */
+.help-box {
+  background: #f0f7ff;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-top: 10px;
+  color: #444;
+  border: 1px solid #cce5ff;
+  transition: all 0.3s ease;
+}
+
+.help-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.help-header:hover {
+  opacity: 0.8;
+}
+
+.help-content {
+  margin-top: 10px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease;
+  max-height: 0;
+}
+
+.help-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+.collapse-icon {
+  transition: transform 0.3s ease;
+  font-size: 12px;
+}
+
+.collapse-icon.rotated {
+  transform: rotate(-90deg);
+}
+
+/* Profiles List */
+.profile-manage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f8f8f8;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+
+.profile-manage-item:hover {
+  background: #f0f0f0;
+}
+
+.profile-manage-actions {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 600px) {
   .container {
     width: 100%;
     height: 100vh;
     border-radius: 0;
     padding: 20px;
+    box-shadow: none;
   }
 
   .stats-card {
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
   }
 
   .stat-item {
-    flex: 1 1 45%; /* 2 items per row */
+    width: 100%;
+    justify-content: flex-start;
   }
 
-  .community-grid {
-    grid-template-columns: 1fr; /* Stack vertically */
-  }
-
-  .modal-content {
-    width: 95%;
-    max-height: 95vh;
-    padding: 15px;
+  .button-group {
+    flex-direction: column;
   }
 
   .btn-primary,
   .btn-secondary {
-    padding: 12px 20px;
+    width: 100%;
+    padding: 12px;
     font-size: 16px;
   }
-}
 
-@media (max-width: 480px) {
-  .stat-item {
-    flex: 1 1 100%; /* 1 item per row */
-  }
-
-  .header h1 {
-    font-size: 24px;
+  .modal-content {
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
   }
 }

@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "community_rules": {
+      ".read": true,
+      ".write": true,
+      "$ruleId": {
+        ".validate": "newData.hasChildren(['name', 'rules', 'author', 'date']) && newData.child('name').isString() && newData.child('name').val().length < 50 && newData.child('description').val().length < 200",
+        "rules": {
+          ".validate": "newData.val().length < 5000"
+        }
+      }
+    }
+  }
+}
